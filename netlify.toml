@@ -1,53 +1,11 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Create your wedding invitation</title>
-<style>
-body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:auto;padding:1rem;color:#222}
-fieldset{border:1px solid #ccc;border-radius:10px;margin:1rem 0;padding:1rem}legend{font-weight:600;padding:0 .4rem}
-label{display:block;margin:.6rem 0 .1rem;font-size:.9rem}input,textarea{width:100%;padding:.5rem;border:1px solid #bbb;border-radius:6px;font:inherit}
-.themes{display:flex;gap:.6rem}.themes label{flex:1;border:2px solid #ccc;border-radius:8px;padding:.6rem;text-align:center;cursor:pointer;margin:0}
-.themes input{width:auto}button{background:#222;color:#fff;border:0;border-radius:8px;padding:.8rem 1.6rem;font:inherit;cursor:pointer}
-#out{background:#eef7ee;border-radius:10px;padding:1rem;margin-top:1rem}#err{color:#b00}.hp{position:absolute;left:-999px}
-</style></head><body>
-<h1>Create your wedding invitation</h1>
-<form id="f">
-<fieldset><legend>Design</legend><div class="themes">
-<label><input type="radio" name="theme" value="gold" checked> Midnight gold<br><small>dark, script lettering</small></label>
-<label><input type="radio" name="theme" value="floral"> Blush floral<br><small>light, romantic</small></label>
-<label><input type="radio" name="theme" value="royal"> Royal red<br><small>traditional red and gold</small></label></div></fieldset>
-<fieldset><legend>Couple</legend>
-<label>Groom's full name<input name="gname" required></label><label>Groom's parents<input name="gparents"></label>
-<label>Bride's full name<input name="bname" required></label><label>Bride's parents<input name="bparents"></label>
-<label>Couple photo<input type="file" accept="image/*" data-p="couplePhoto"></label>
-<label>Groom photo<input type="file" accept="image/*" data-p="groomPhoto"></label>
-<label>Bride photo<input type="file" accept="image/*" data-p="bridePhoto"></label></fieldset>
-<div id="evs"></div>
-<fieldset><legend>Message and extras</legend>
-<label>Invitation message<textarea name="message" rows="5">We joyfully invite you to celebrate our wedding. Your presence and blessings will make our day complete.</textarea></label>
-<label>Countdown to (wedding date and time)<input type="datetime-local" name="countdown"></label>
-<label>WhatsApp number for wishes (with country code)<input name="whatsapp" placeholder="919876543210"></label>
-<label>Gallery photos (up to 6)<input type="file" accept="image/*" multiple id="gal"></label></fieldset>
-<fieldset><legend>Your link</legend><label>Link name (letters, numbers, dashes)<input name="slug" required pattern="[a-zA-Z0-9\-]+" placeholder="kiran-mounika"></label></fieldset>
-<input class="hp" name="website" tabindex="-1" autocomplete="off">
-<button id="go">Create invitation</button><p id="err"></p></form><div id="out" hidden></div>
-<script>
-const f=document.getElementById('f'),P={gallery:[]},q=new URLSearchParams(location.search);let token=q.get('token');
-const titles=['Reception','Wedding','Another event (optional)'];
-document.getElementById('evs').innerHTML=[0,1,2].map(i=>`<fieldset><legend>Event ${i+1}</legend>
-<label>Event name<input name="e${i}title" value="${i<2?titles[i]:''}"></label><label>Venue name<input name="e${i}venue"></label>
-<label>Address<input name="e${i}addr"></label><label>Date<input type="date" name="e${i}date"></label>
-<label>Time (e.g. 6:00 PM)<input name="e${i}time"></label><label>Google Maps link<input type="url" name="e${i}map"></label></fieldset>`).join('');
-async function shrink(file){const b=await createImageBitmap(file),r=Math.min(1,900/Math.max(b.width,b.height)),c=document.createElement('canvas');
- c.width=b.width*r;c.height=b.height*r;c.getContext('2d').drawImage(b,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.72)}
-f.querySelectorAll('[data-p]').forEach(i=>i.onchange=async()=>{P[i.dataset.p]=i.files[0]?await shrink(i.files[0]):''});
-document.getElementById('gal').onchange=async e=>{P.gallery=await Promise.all([...e.target.files].slice(0,6).map(shrink))};
-if(q.get('edit'))fetch('/api/get?slug='+q.get('edit')).then(r=>r.json()).then(d=>{
- for(const[k,v]of Object.entries(d)){if(['couplePhoto','groomPhoto','bridePhoto','gallery'].includes(k))P[k]=v;else if(f.elements[k]&&k!='token')f.elements[k].value=v}
- f.elements.slug.readOnly=true;document.getElementById('go').textContent='Save changes'});
-f.onsubmit=async e=>{e.preventDefault();const d={...P,token},err=document.getElementById('err');err.textContent='';
- new FormData(f).forEach((v,k)=>{if(typeof v=='string')d[k]=v});
- const r=await fetch('/api/save',{method:'POST',body:JSON.stringify(d)}),j=await r.json();
- if(!r.ok){err.textContent=j.error||'Could not save. Try again.';return}
- const o=document.getElementById('out');o.hidden=false;
- o.innerHTML=`<b>Your invitation is ready.</b><p>Share this link with guests:<br><a href="/i/${j.slug}">${location.origin}/i/${j.slug}</a></p>
- <p>Keep this private link to edit it later:<br><a href="/?edit=${j.slug}&token=${j.token}">${location.origin}/?edit=${j.slug}&amp;token=${j.token}</a></p>`;o.scrollIntoView()};
-</script></body></html>
+[build]
+  publish = "Public"
+
+[functions]
+  directory = "netlify/functions"
+
+# Shareable invitation links like /i/kiran-mounika render the invite page
+[[redirects]]
+  from = "/i/*"
+  to = "/invite.html"
+  status = 200
